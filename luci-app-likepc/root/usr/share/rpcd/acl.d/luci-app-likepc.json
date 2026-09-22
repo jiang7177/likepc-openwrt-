@@ -1,0 +1,29 @@
+{
+	"luci-app-likepc": {
+		"description": "模拟pc（likepc，不含认证）：读写配置、查看日志、控制服务与一键工具",
+		"read": {
+			"file": {
+				"/tmp/likepc.log": [ "read" ],
+				"/tmp/likepc.state": [ "read" ],
+				"/tmp/likepc.mac": [ "read" ],
+				"/tmp/likepc.info": [ "read" ],
+				"/tmp/likepc.alert": [ "read" ],
+				"/tmp/likepc.fails": [ "read" ],
+				"/tmp/likepc.deps": [ "read" ],
+				"/tmp/likepc.harden": [ "read" ]
+			},
+			"ubus": {
+				"service": [ "list" ]
+			},
+			"uci": [ "likepc" ]
+		},
+		"write": {
+			"file": {
+				"/etc/init.d/likepc": [ "exec" ],
+				"/usr/share/likepc/likepc.sh": [ "exec" ],
+				"/tmp/likepc.log": [ "write" ]
+			},
+			"uci": [ "likepc" ]
+		}
+	}
+}

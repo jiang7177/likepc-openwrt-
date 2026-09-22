@@ -1,0 +1,77 @@
+# 模拟pc配置（不含认证），由 LuCI「服务 -> 模拟pc」写入
+# 手改后执行：/etc/init.d/likepc restart
+
+config likepc 'main'
+	# 开机自动运行（0/1）
+	option enabled '0'
+	# 防掉线检测（0/1）：开启后常驻检测外网，连续不通时按开关换 MAC / 告警
+	option monitor '1'
+
+	# 外网检测地址，可填多个（空格或逗号分隔）
+	option ping_host '119.29.29.29'
+
+	# 防掉线检测间隔(秒) / 连续几次不通后开始处理
+	option check_interval '30'
+	option fail_threshold '3'
+
+	# 连续检测失败时在界面顶部弹告警（0/1）
+	option alert_enable '1'
+	# 连续失败多少次后开始告警
+	option alert_threshold '3'
+
+	# 开机后等待多少秒再开始检测（等 WAN 就绪）
+	option start_delay '15'
+
+	# ping 探测参数
+	option ping_count '1'
+	option ping_timeout '3'
+
+	# ---------------- 防拉黑：检测到外网不通时在 5 个 MAC 之间轮换 ----------------
+	# 开关（0/1）
+	option mac_auto '0'
+	# 随机 MAC 用的厂商前缀（默认螃蟹 Realtek），可填多个
+	option mac_oui '00:e0:4c'
+	# 当前使用池中的第几个（从 0 开始）
+	option mac_index '0'
+	# 一轮掉线最多连续轮换几次
+	option mac_max_rotate '5'
+	# 两次自动轮换之间的最小间隔(秒)
+	option mac_cooldown '600'
+	# 换完 MAC 后等待多少秒再检测
+	option mac_settle '10'
+	# 首次换 MAC 前记录的原始 MAC / client-id（点「恢复原始 MAC」时还原）
+	option mac_original ''
+	option mac_orig_clientid ''
+	# WAN 设备名 / 接口名（留空或 auto 表示自动识别）
+	option wan_device 'auto'
+	option wan_iface 'auto'
+	# 预生成的 MAC 池（安装时/点按钮自动生成，共 5 个；用 list 追加）
+
+	# ---------------- 一键工具 ----------------
+	# 添加防火墙规则时是否同时开启路由器 NTP 服务
+	option fw_ntp_server '1'
+	# LAN 网段与路由器地址（留空自动按 network.lan 计算）
+	option fw_lan_cidr ''
+	option fw_router_ip ''
+
+	# 屏蔽局域网设备访问门户探测地址（0/1）
+	# firewall3 用 iptables -m string 按响应正文丢包；nftables 没有字符串匹配，
+	# firewall4 下改成按目标地址拦请求，效果一样且不会误伤正常网页。
+	option fw_probe_block '1'
+	# 探测地址段，可填多个（空格或逗号分隔）
+	option fw_probe_cidr '1.1.1.0/24'
+	# 是否已伪装成 Windows 电脑（0/1）
+	option pc_fake '0'
+	# 主机名前缀：LAPTOP / DESKTOP / random
+	# （电脑名不落盘：伪装时生成一次写进 network，只有被拉黑换 MAC 时才会跟着换）
+	option pc_prefix 'random'
+	# 伪装时是否顺便换一个 PC 网卡风格的 MAC
+	option pc_random_mac '0'
+	# PC 厂商 MAC 前缀池
+	option pc_mac_oui ''
+	# 原始参数备份
+	option pc_backup_done ''
+	option pc_orig_hostname ''
+	option pc_orig_vendorid ''
+	option pc_orig_clientid ''
+	option pc_orig_reqopts ''

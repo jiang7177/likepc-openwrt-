@@ -1,0 +1,14 @@
+{
+	"admin/services/likepc": {
+		"title": "模拟pc",
+		"order": 60,
+		"action": {
+			"type": "view",
+			"path": "likepc/tools"
+		},
+		"depends": {
+			"acl": [ "luci-app-likepc" ],
+			"uci": { "likepc": true }
+		}
+	}
+}

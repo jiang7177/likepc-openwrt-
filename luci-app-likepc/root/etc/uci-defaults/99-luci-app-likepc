@@ -1,0 +1,22 @@
+#!/bin/sh
+# 首次启动/安装后：注册 ucitrack（配置变化自动重启服务）并清掉 LuCI 菜单缓存
+# 顺便预生成 5 个 WAN MAC（防拉黑轮换用）
+
+chmod 0755 /etc/init.d/likepc /usr/share/likepc/likepc.sh 2>/dev/null
+
+[ -f "/etc/config/ucitrack" ] && {
+	uci -q batch <<-EOF >/dev/null
+	delete ucitrack.@likepc[-1]
+	add ucitrack likepc
+	set ucitrack.@likepc[-1].init=likepc
+	commit ucitrack
+	EOF
+}
+
+# 预生成 5 个 WAN MAC（防拉黑轮换用）
+if [ -x /usr/share/likepc/likepc.sh ]; then
+	/usr/share/likepc/likepc.sh genmac >/dev/null 2>&1
+fi
+
+rm -rf /tmp/luci-* 2>/dev/null
+exit 0

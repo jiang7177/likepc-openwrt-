@@ -1,0 +1,62 @@
+#!/bin/sh /etc/rc.common
+# 模拟pc服务 (likepc，不含认证)
+#   是否开机运行    -> /etc/config/likepc 的 enabled
+#   是否防掉线检测  -> /etc/config/likepc 的 monitor
+# 两个开关都在 LuCI「服务 -> 模拟pc」里可改，改完重启本服务即可生效。
+
+START=95
+STOP=10
+USE_PROCD=1
+
+SCRIPT=/usr/share/likepc/likepc.sh
+PIDFILE=/var/run/likepc_oneshot.pid
+
+start_service() {
+	local enabled monitor
+
+	# 兜底：文件从 Windows/压缩包复制过来可能丢了可执行位
+	[ -x "$SCRIPT" ] || chmod 0755 "$SCRIPT" 2>/dev/null
+
+	config_load likepc
+	config_get_bool enabled main enabled 0
+	config_get_bool monitor main monitor 1
+
+	if [ "$enabled" != "1" ]; then
+		logger -t likepc "开机自动运行未启用，本次不启动检测"
+		return 0
+	fi
+
+	if [ "$monitor" = "1" ]; then
+		# 防掉线检测：交给 procd 常驻守护
+		procd_open_instance
+		procd_set_param command "$SCRIPT" daemon
+		procd_set_param respawn 3600 5 5
+		procd_set_param stdout 1
+		procd_set_param stderr 1
+		procd_set_param term_timeout 15
+		procd_close_instance
+	else
+		# 只检测一次：开机后跑一轮就退出，不需要常驻进程
+		if [ -f "$PIDFILE" ]; then
+			kill "$(cat "$PIDFILE")" 2>/dev/null
+		fi
+		"$SCRIPT" once >/dev/null 2>&1 &
+		echo $! >"$PIDFILE"
+	fi
+}
+
+stop_service() {
+	if [ -f "$PIDFILE" ]; then
+		kill "$(cat "$PIDFILE")" 2>/dev/null
+		rm -f "$PIDFILE"
+	fi
+}
+
+reload_service() {
+	stop
+	start
+}
+
+service_triggers() {
+	procd_add_reload_trigger likepc
+}

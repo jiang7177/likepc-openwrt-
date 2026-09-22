@@ -1,0 +1,43 @@
+# luci-app-likepc —— firewall4 (nftables) 规则
+#
+# 本文件由模板渲染而来，模板在源码里（随插件一起编译进固件）：
+#     /usr/share/likepc/templates/fw4.nft
+# 设备上这份是插件生成的：
+#     /etc/likepc/fw4.nft
+# 再由 /etc/config/firewall 的 include 段交给 firewall4 加载：
+#     config include
+#         option type 'nftables'
+#         option path '/etc/likepc/fw4.nft'
+#         option position 'table-prepend'
+# 想改规则就改这个模板，重新编译 / 重装插件即可。
+#
+# 渲染时会替换的占位符（写法：名字两边各加一个 @ 号）：
+#     LAN_CIDR            内网网段，例如 192.168.8.0/24
+#     ROUTER_IP           路由器后台地址，例如 192.168.8.1
+#     PROBE_BLOCK_RULES   门户探测地址屏蔽规则，界面开关关掉时这一处为空
+#
+# 注意：渲染后本文件位于 table inet fw4 内部，所以这里只能写 chain，
+#       不能写 table，否则 nft 会报错。
+#
+# DNS / NTP 强制走路由器本机
+chain likepc_redirect {
+	type nat hook prerouting priority dstnat; policy accept;
+
+	# 内网设备的 NTP 请求改送到路由器（等价于 firewall3 版的 ntp_force_local 链）
+	udp dport 123 ip saddr @LAN_CIDR@ ip daddr != { 0.0.0.0/8, 127.0.0.0/8, @LAN_CIDR@ } dnat to @ROUTER_IP@
+
+	# 其余来源的 NTP 重定向到本机 123
+	udp dport 123 redirect to :123
+
+	# DNS 强制走本机 dnsmasq
+	udp dport 53 redirect to :53
+	tcp dport 53 redirect to :53
+}
+
+# 统一 TTL，避免被识别成路由器共享
+chain likepc_ttl {
+	type filter hook postrouting priority mangle; policy accept;
+	ip ttl set 128
+}
+
+@PROBE_BLOCK_RULES@
